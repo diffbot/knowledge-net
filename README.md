@@ -5,7 +5,7 @@ KnowledgeNet is a benchmark dataset for the task of automatically populating a k
 For instance, the dataset contains text expressing the fact ([Gennaro Basile](https://www.wikidata.org/wiki/Q1367602); RESIDENCE; [Moravia](https://www.wikidata.org/wiki/Q43266)), in the passage:
 "Gennaro Basile was an Italian painter, born in Naples but active in the German-speaking countries. He settled at Brünn, in Moravia, and lived about 1756..."
 
-For a description of the dataset and baseline systems, please refer to our EMNLP paper.
+For a description of the dataset and baseline systems, please refer to our [EMNLP paper](https://github.com/diffbot/knowledge-net/blob/master/knowledgenet-emnlp-cameraready.pdf).
 
 
 ## Leaderboard
@@ -114,7 +114,7 @@ The training set is available at `train.json`. Here is an example document:
 
 
 ### Evaluation
-The official evaluation script is also available for download and can be used to evaluate a system using the training set. To use the script, a system has to produce a prediction file, which should contain the same JSON documents of the ground truth file. The prediction file should look exactly like the ground truth file, except for the contents of `facts` (which should contain the facts predicted by the system).
+The official evaluation script is also available for download and can be used to evaluate a system using the training set (via cross-validation). The script takes a gold standard file (e.g., `train.json`) and a prediction file (which needs to be produced by the system). The prediction file should look exactly like the gold standard file (same docuements and fields), except for the contents of `facts` (which should contain the facts predicted by the system).
 
 The script has several option parameters (see below), but only the evaluation method (-e) is strictly necessary to execute the script. 
 
@@ -156,3 +156,7 @@ We consider three different methods to establish if there is a match:
 ## Adding a system to the leaderboard
 
 To preserve the integrity of the results, we have released the test set (fifth fold) without annotations (`test-no-facts.json`). To evaluate the results of your system and (optionally) add your system to the leaderboard, please send an email with your prediction file to filipe[at]diffbot[dot]com. 
+
+# Code
+
+The code for the baseline systems will be released soon.
