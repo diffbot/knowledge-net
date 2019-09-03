@@ -1,6 +1,6 @@
 # KnowledgeNet
 
-KnowledgeNet is a benchmark dataset for the task of automatically populating a knowledge base (Wikidata) with facts expressed in natural language text on the web. KnowledgeNet provides text exhaustively annotated with facts, thus enabling the holistic end-to-end evaluation of **knowledge base population systems (KBP)** as a whole, unlike previous benchmarks that are more suitable for the evaluation of individual subcomponents (e.g., entity linking, relation extraction). 
+KnowledgeNet is a benchmark dataset for the task of automatically populating a knowledge base (Wikidata) with facts expressed in natural language text on the web. KnowledgeNet provides text exhaustively annotated with facts, thus enabling the holistic end-to-end evaluation of **knowledge base population systems** as a whole, unlike previous benchmarks that are more suitable for the evaluation of individual subcomponents (e.g., entity linking, relation extraction). 
 
 For instance, the dataset contains text expressing the fact ([Gennaro Basile](https://www.wikidata.org/wiki/Q1367602); RESIDENCE; [Moravia](https://www.wikidata.org/wiki/Q43266)), in the passage:
 "Gennaro Basile was an Italian painter, born in Naples but active in the German-speaking countries. He settled at Brünn, in Moravia, and lived about 1756..."
@@ -11,8 +11,8 @@ For a description of the dataset and baseline systems, please refer to our [EMNL
 ## Leaderboard
 
 |        System       		| Link F1		| Text F1  		|
-|---------------------   	| ---------		|--------- 		|
-| _Human_					| **0.822** 	| **0.878** 	|
+|---------------------   	| ---------	|--------- 		|
+| _Human_	                | **0.822** | **0.878** 	|
 | KnowledgeNet Baseline	5	| 0.504 		| 0.688     	|
 | KnowledgeNet Baseline 4	| 0.491 		| 0.621     	|
 | KnowledgeNet Baseline 3	| 0.362 		| 0.545     	|
@@ -23,7 +23,7 @@ For a description of the dataset and baseline systems, please refer to our [EMNL
 
 ## Getting Started
 
-The training set is available at `train.json`. Here is an example document:
+The training set is available at `train.json`. Each document contains a number of _passages_. A passage represents a sentence considered for annotation. Here is an example document:
 
 ```json
 {
@@ -114,21 +114,19 @@ The training set is available at `train.json`. Here is an example document:
 
 
 ### Evaluation
-The official evaluation script is also available for download and can be used to evaluate a system using the training set (via cross-validation). The script takes a gold standard file (e.g., `train.json`) and a prediction file (which needs to be produced by the system). The prediction file should look exactly like the gold standard file (same docuements and fields), except for the contents of `facts` (which should contain the facts predicted by the system).
-
-The script has several option parameters (see below), but only the evaluation method (-e) is strictly necessary to execute the script. 
+The official evaluation script is also available for download and can be used to evaluate a system using the training set (via cross-validation). The script takes a gold standard file (e.g., `train.json`) and a prediction file (which needs to be produced by the system). The prediction file should look exactly like the gold standard file (same documents and fields), except for the contents of `facts` (which should contain the facts predicted by the system).
 
 ```
 usage: evaluator.py [-h] [-e {span_e,span_o,uri}] [-c] [-a ANALYSISPATH] [-f {1,2,3,4,5}]
                     goldFile predictionFile
 
-positional arguments:
+mandatory arguments:
   goldFile                Path of the KnowledgeNet file with the gold data
   predictionFile          Path of the KnowledgeNet file with the predicted data
-
+  -e {span_e,span_o,uri}  Choose the evaluation method: span-exact vs span-overlap vs uri          
+  
 optional arguments:
   -h, --help              show this help message and exit
-  -e {span_e,span_o,uri}  Choose the evaluation method: span-exact vs span-overlap vs uri          
   -c                      print raw counts of tp/fn/fp for prec/rec/F1 metrics
   -a ANALYSISPATH         Folder to store error analysis files (default=no analysis).
   -f {1,2,3,4,5}          folds to evaluate (useful during cross-validation). Default is 4.
