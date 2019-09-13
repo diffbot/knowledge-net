@@ -12,12 +12,12 @@ For a description of the dataset and baseline systems, please refer to our [EMNL
 
 |        System       		| Link F1		| Text F1  		|
 |---------------------   	| ---------	|--------- 		|
-| _Human_	                | **0.822** | **0.878** 	|
-| KnowledgeNet Baseline	5	| 0.504 		| 0.688     	|
-| KnowledgeNet Baseline 4	| 0.491 		| 0.621     	|
-| KnowledgeNet Baseline 3	| 0.362 		| 0.545     	|
-| KnowledgeNet Baseline 2	| 0.342 		| 0.554     	|
-| KnowledgeNet Baseline 1	| 0.281 		| 0.518     	|
+| _Human_	                                                            | **0.822** | **0.878** 	|
+| KnowledgeNet Baseline	5	(Baseline 4 + BERT)                         | 0.504 		| 0.688     	|
+| KnowledgeNet Baseline 4	(Baseline 3 + noisy candidate facts)        | 0.491 		| 0.621     	|
+| KnowledgeNet Baseline 3	(Baseline 2 + KB information)               | 0.362 		| 0.545     	|
+| KnowledgeNet Baseline 2	(Baseline 1 + coreference resolution)       | 0.342 		| 0.554     	|
+| KnowledgeNet Baseline 1 (based on Stanford's TAC KBP winning system	| 0.281 		| 0.518     	|
 
 
 
