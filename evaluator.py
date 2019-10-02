@@ -3,19 +3,24 @@
 '''
 Command line usage
 ------------------
-usage: evaluator.py [-h] [-e {span_exact,span_overlap,uri}] [-c] [-a ANALYSISPATH] [-f {1,2,3,4,5}]
+usage: evaluator.py [-h] [-e {span_exact,span_overlap,uri}] [-c]
+                    [-a ANALYSISPATH] [-f {1,2,3,4,5,-1}]
                     goldFile predictionFile
 
 positional arguments:
-  goldFile                Path of the KnowledgeNet file with the gold data
-  predictionFile          Path of the KnowledgeNet file with the predicted data
+  goldFile              Path of the KnowledgeNet file with the gold data
+  predictionFile        Path of the KnowledgeNet file with the predicted data
 
 optional arguments:
-  -h, --help              show this help message and exit
-  -e {span_exact,span_overlap,uri}  Choose the evaluation method: span-exact vs span-overlap vs uri          
-  -c                      print raw counts of tp/fn/fp for prec/rec/F1 metrics
-  -a ANALYSISPATH         Folder to store error analysis files (default=no analysis).
-  -f {1,2,3,4,5}          folds to evaluate (useful during cross-validation). Default is 4.
+  -h, --help            show this help message and exit
+  -e {span_exact,span_overlap,uri}
+                        Choose the evaluation method: span-exact vs span-
+                        overlap vs uri
+  -c                    print raw counts of tp/fn/fp for prec/rec/F1 metrics
+  -a ANALYSISPATH       Folder to store error analysis and results files
+                        (default=no analysis).
+  -f {1,2,3,4,5,-1}     folds to evaluate. Default is 4. Choose -1 to evaluate
+                        on all the folds.
 '''
 
 import copy
@@ -26,7 +31,9 @@ import os
 from collections import defaultdict
 import io
 
-# Internal representation for a Knowledgenet document.
+#######################################################
+# these functions are used to represent a Knowledgenet document
+
 class KNDocument:
   def __init__(self, documentId, documentText, fold, passages, source):
     self.documentId = documentId
@@ -91,26 +98,35 @@ class KNFact:
     return (self.factId == othr.factId)
 
 #######################################################
+# these functions are used to read a Knowledgenet dataset
 
 # Loads Knowledgenet documents
-def readKnowledgenetFile(dataset, foldToRead):
+def readKnowledgenetFile(dataset, foldToRead, propertiesToConsider={}):
   documents = {}
   properties = {}
-  reader = io.open(dataset, "r")
   passagesWithError = set()
+  
+  reader = io.open(dataset, "r")
   for line in reader:
     document = json.loads(line)
     documentId = str(document["documentId"])
     documentText = document["documentText"]
     fold = document["fold"]
+    
     source = "TREx"
     if "source" in document:
       source = document["source"]
     if fold != foldToRead and foldToRead != -1:
       continue
+
     passages = []
     for passage in document["passages"]:
       passageId = passage["passageId"]
+      passageStart = passage["passageStart"]
+      passageEnd = passage["passageEnd"]
+      passageText = passage["passageText"]
+
+      # read all the annotated properties on the passage
       exhaustivelyAnnotatedProperties = []
       for property in passage["exhaustivelyAnnotatedProperties"]:
         propertyId = property["propertyId"]
@@ -119,20 +135,34 @@ def readKnowledgenetFile(dataset, foldToRead):
         properties[propertyId] = propertyName
         knpr = KNDProperty(propertyId, propertyName, propertyDescription)
         exhaustivelyAnnotatedProperties.append(knpr)
-      passageStart = passage["passageStart"]
-      passageEnd = passage["passageEnd"]
-      passageText = passage["passageText"]
+
+      # properties will always contain something except when evaluation test-no-facts.json
+      # in that case we use goldProperties to get the names
+      if (len(properties) != 0):
+        propertiesToConsider = properties
+     
       facts = []
       for fact in passage["facts"]:
         before = len(passagesWithError)
+
         # those attributes have to be present and can't be empty
-        factId = fact["factId"] if (checkField("factId", fact) == "") else passagesWithError.add(passageId + "\t" + checkField("factId", fact))
-        propertyId = fact["propertyId"] if (checkField("propertyId", fact) == "") else passagesWithError.add(passageId + "\t" + checkField("propertyId", fact))
         subjectStart = fact["subjectStart"] if (checkField("subjectStart", fact) == "") else passagesWithError.add(passageId + "\t" + checkField("subjectStart", fact))
         subjectEnd = fact["subjectEnd"] if (checkField("subjectEnd", fact) == "") else passagesWithError.add(passageId + "\t" + checkField("subjectEnd", fact))
         objectStart = fact["objectStart"] if (checkField("objectStart", fact) == "") else passagesWithError.add(passageId + "\t" + checkField("objectStart", fact))
         objectEnd = fact["objectEnd"] if (checkField("objectEnd", fact) == "") else passagesWithError.add(passageId + "\t" + checkField("objectEnd", fact))
-        # those attributes have to be present but can be empty
+        
+        # for the property check even if it exists
+        propertyId = fact["propertyId"] if (checkField("propertyId", fact) == "") else passagesWithError.add(passageId + "\t" + checkField("propertyId", fact))
+        if (not propertyId in propertiesToConsider):
+          passagesWithError.add(passageId + "\t" + "property " + propertyId + " unknown")
+        
+        # read or create an id
+        if "factId" in fact and fact["factId"] != "":
+          factId = fact["factId"]
+        else:
+          factId = str(documentId) + ":" + str(subjectStart) + ":" + str(subjectEnd) + ":" + str(objectStart) + ":" + str(objectEnd) + ":" + str(propertyId)
+
+        # those attributes have to be present, BUT can be empty
         subjectUri = fact["subjectUri"] if ("subjectUri" in fact) else passagesWithError.add(passageId + "\t" + "subjectUri\tmissing field")
         objectUri = fact["objectUri"] if ("objectUri" in fact) else passagesWithError.add(passageId + "\t"+ "objectUri\tmissing field")
         after = len(passagesWithError)
@@ -141,19 +171,32 @@ def readKnowledgenetFile(dataset, foldToRead):
         if (after>before):
           break
 
-        # those attributes are built when reading, if there are not exceptions
+        # those attributes are built when reading, if there are not exceptions above
         subjectText = fact["subjectText"] if ("subjectText" in fact and fact["subjectText"] != "") else documentText[subjectStart:subjectEnd]
         objectText = fact["objectText"] if ("objectText" in fact and fact["objectText"] != "") else documentText[objectStart:objectEnd]
-        annotatedPassage = buildAnnotatedPassage(documentText, passageStart, passageEnd, subjectStart, subjectEnd, objectStart, objectEnd)
-        humanReadable = '<%s> <%s> <%s>' % (subjectText, properties[propertyId], objectText)
+        
+        # read or create annotated passage
+        if "annotatedPassage" in fact and fact["annotatedPassage"] != "":
+          annotatedPassage = fact["annotatedPassage"]
+        else:
+          annotatedPassage = buildAnnotatedPassage(documentText, passageStart, passageEnd, subjectStart, subjectEnd, objectStart, objectEnd)
+
+        # read or create human readable
+        if "humanReadable" in fact and fact["humanReadable"] != "":
+          humanReadable = fact["humanReadable"]
+        else:
+          humanReadable = '<%s> <%s> <%s>' % (subjectText, propertiesToConsider[propertyId], objectText)
         
         knf = KNFact(factId, propertyId, subjectStart, subjectEnd, objectStart, objectEnd, subjectUri, objectUri, 
           subjectText, objectText, annotatedPassage, humanReadable)
         facts.append(knf)
+      
       knp = KNDPassage(passageId, exhaustivelyAnnotatedProperties, passageStart, passageEnd, passageText, facts)
       passages.append(knp)
+    
     knd = KNDocument(documentId, documentText, fold, passages, source)
     documents[documentId] = knd
+  
   reader.close()
 
   if (len(passagesWithError) > 0):
@@ -177,17 +220,34 @@ def buildAnnotatedPassage(documentText, passageStart, passageEnd, subjectStart, 
   annPassage = '%s<%s>%s<%s>%s' % (s1, s2, s3, s4, s5)
   return annPassage
 
-def checkField(nameField, fact):
+def checkField(attribute, knObject):
+  '''
+   Check if the attribute is empty or missing and return an error accordingly.
+  '''
   error = ""
-  if nameField in fact:
-    if fact[nameField] == "":
-      error = nameField + "\tempty field"
+  if attribute in knObject:
+    if knObject[attribute] == "":
+      error = attribute + "\tempty field"
   else:
-    error = nameField + "\tmissing field"
+    error = attribute + "\tmissing field"
   return error
 
-
 #######################################################
+# these functions are used to match two facts
+
+def twoFactsMatch(fact1, fact2, evaluation):
+  '''
+  Establish if two facts match based on the chosen evaluation method.
+  '''
+  entityMatch = False
+  if evaluation == 'uri':
+    entityMatch = equalsByURI(fact1, fact2)
+  if evaluation == 'span_exact':
+    entityMatch = equalsBySpanExact(fact1, fact2)
+  if evaluation == 'span_overlap':
+    entityMatch = equalsBySpanOverlap(fact1, fact2)
+  propertyMatch = (fact1.propertyId == fact2.propertyId)
+  return entityMatch and propertyMatch
 
 def overlap(start1, end1, start2, end2):
   overlap = False
@@ -227,28 +287,13 @@ def getWikidataId(uri):
   uri = uri.split("/")[-1]
   return uri
 
-def twoFactsMatch(fact1, fact2, evaluation):
-  entityMatch = False
-  if evaluation == 'uri':
-    entityMatch = equalsByURI(fact1, fact2)
-  if evaluation == 'span_exact':
-    entityMatch = equalsBySpanExact(fact1, fact2)
-  if evaluation == 'span_overlap':
-    entityMatch = equalsBySpanOverlap(fact1, fact2)
-  propertyMatch = (fact1.propertyId == fact2.propertyId)
-  return entityMatch and propertyMatch
-
-def isValidForURI(fact):
-  propertiesNoUri = set(["5", "15", "99"])
-  subjectUri = fact.subjectUri
-  objectUri = fact.objectUri
-  propertyForUri = not fact.propertyId in propertiesNoUri
-  valid = False
-  if (not "diffbot" in subjectUri) and (subjectUri != "") and (not "diffbot" in objectUri) and (objectUri != ""):
-    valid = True
-  return valid and propertyForUri
+#######################################################
+# these functions are used when evaluating facts for uri
 
 def filterForURIEvaluation(dataset):
+  '''
+  For Link evaluation we filter out all the facts that do not have both uri.
+  '''
   properties = {}
   for documentId in dataset:
     for passage in dataset[documentId].passages:
@@ -266,34 +311,45 @@ def filterForURIEvaluation(dataset):
       passage.facts = filteredFacts
   return dataset, properties
 
-#######################################################
+def isValidForURI(fact):
+  propertiesNoUri = set(["5", "15", "14"])
+  isPropertyForUri = not fact.propertyId in propertiesNoUri
+  return (fact.subjectUri != "") and (fact.objectUri != "") and isPropertyForUri
 
-def printConfusionMatrix(confusionMatrix):
-  print("\n ------ Confusion Matrix ------")
+#######################################################
+# these functions are used to print results and analysis
+
+def printRecap(args):
+  print("\n ------ Experiment Recap ------ ")
+  print('%-30s%-15s' % ("Fold Evaluated", args.f if args.f != -1 else "all"))
+  print('%-30s%-15s' % ("Method" , args.e))
+
+def printPredictionsMatrix(predictionsMatrix):
+  print("\n ------ Predictions Matrix ------")
   print('%-30s%-15s%-15s%-15s' % ("Property" , "TP", "FP", "FN"))
   print('%-30s%-15s%-15s%-15s' % ("--------" , "--", "--", "--"))
   tp_total = 0
   fp_total = 0
   fn_total = 0
-  for p in confusionMatrix:
-    values = confusionMatrix[p]
-    tp_total+=confusionMatrix[p]["TP"]
-    fp_total+=confusionMatrix[p]["FP"]
-    fn_total+=confusionMatrix[p]["FN"]
+  for p in predictionsMatrix:
+    values = predictionsMatrix[p]
+    tp_total+=predictionsMatrix[p]["TP"]
+    fp_total+=predictionsMatrix[p]["FP"]
+    fn_total+=predictionsMatrix[p]["FN"]
     print('%-30s%-15i%-15i%-15i' % (p , values["TP"], values["FP"], values["FN"]))
   print('%-30s%-15i%-15i%-15i' % ("#global" , tp_total, fp_total, fn_total))
 
-def microEvaluation(confusionMatrix, printCM):
-  if printCM:
-    printConfusionMatrix(confusionMatrix)
+def microEvaluation(predictionsMatrix, printPM):
+  if printPM:
+    printPredictionsMatrix(predictionsMatrix)
   evals = []
   print("\n ------ Micro Evaluation ------ ")
   print('%-30s%-15s%-15s%-15s' % ("Property" , "Precision", "Recall", "F1"))
   print('%-30s%-15s%-15s%-15s' % ("--------" , "-----", "-----", "-----"))
-  for prop in confusionMatrix:
-    tp = confusionMatrix[prop]["TP"]
-    fp = confusionMatrix[prop]["FP"]
-    fn = confusionMatrix[prop]["FN"]
+  for prop in predictionsMatrix:
+    tp = predictionsMatrix[prop]["TP"]
+    fp = predictionsMatrix[prop]["FP"]
+    fn = predictionsMatrix[prop]["FN"]
     precision = float(tp)/(tp+fp) if (tp+fp) else 0.0
     recall = float(tp)/(tp+fn) if (tp+fn) else 0.0
     f_score = 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
@@ -301,7 +357,7 @@ def microEvaluation(confusionMatrix, printCM):
     evals.append((prop, precision, recall, f_score))
   return evals
 
-def macroEvaluation(confusionMatrix):
+def macroEvaluation(predictionsMatrix):
   evals = []
   print("\n ------ Macro Evaluation ------ ")
   print('%-30s%-15s%-15s%-15s' % ("Property" , "Precision", "Recall", "F1"))
@@ -309,10 +365,10 @@ def macroEvaluation(confusionMatrix):
   tp_total = 0
   fp_total = 0
   fn_total = 0
-  for prop in confusionMatrix:
-    tp_total+=confusionMatrix[prop]["TP"]
-    fp_total+=confusionMatrix[prop]["FP"]
-    fn_total+=confusionMatrix[prop]["FN"]
+  for prop in predictionsMatrix:
+    tp_total+=predictionsMatrix[prop]["TP"]
+    fp_total+=predictionsMatrix[prop]["FP"]
+    fn_total+=predictionsMatrix[prop]["FN"]
   precision = float(tp_total)/(tp_total+fp_total) if (tp_total+fp_total) else 0.0
   recall = float(tp_total)/(tp_total+fn_total) if (tp_total+fn_total) else 0.0
   f_score = 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
@@ -363,8 +419,8 @@ def writeHtmlFile(analysis, analysisPath, evaluation, goldProperties):
           color = "green";
           p = fact.propertyId
           if evaluation == 'uri':
-            subject = "<a href=" + fact.subjectUri + ">" + getWikidataId(fact.subjectUri) + "</a>"
-            object = "<a href=" + fact.objectUri + ">" + getWikidataId(fact.objectUri) + "</a>"
+            subject = fact.subjectText + " (" + str(fact.subjectStart) + "-" + str(fact.subjectEnd) + ")<br><a href=" + fact.subjectUri + ">" + getWikidataId(fact.subjectUri) + "</a>"
+            object = fact.objectText + " (" + str(fact.objectStart) + "-" + str(fact.objectEnd) + ")<br><a href=" + fact.objectUri + ">" + getWikidataId(fact.objectUri) + "</a>"
           else:
             subject = fact.subjectText + " (" + str(fact.subjectStart) + "-" + str(fact.subjectEnd) + ")"
             object = fact.objectText + " (" + str(fact.objectStart) + "-" + str(fact.objectEnd) + ")"
@@ -378,7 +434,7 @@ def writeHtmlFile(analysis, analysisPath, evaluation, goldProperties):
       writer.write("</td>")
       
       writer.write("<td style=\"vertical-align:top;\">")
-      writer.write("<table style=\"width:100%; table-layout:fixed;\">")
+      writer.write("<table style=\"width:100%;\">")
       writer.write("<tr>");
       writer.write("<th colspan=\"3\">False Negative</th>");
       writer.write("</tr>");
@@ -387,8 +443,8 @@ def writeHtmlFile(analysis, analysisPath, evaluation, goldProperties):
           color = "red";
           p = fact.propertyId
           if evaluation == 'uri':
-            subject = "<a href=" + fact.subjectUri + ">" + getWikidataId(fact.subjectUri) + "</a>"
-            object = "<a href=" + fact.objectUri + ">" + getWikidataId(fact.objectUri) + "</a>"
+            subject = fact.subjectText + " (" + str(fact.subjectStart) + "-" + str(fact.subjectEnd) + ")<br><a href=" + fact.subjectUri + ">" + getWikidataId(fact.subjectUri) + "</a>"
+            object = fact.objectText + " (" + str(fact.objectStart) + "-" + str(fact.objectEnd) + ")<br><a href=" + fact.objectUri + ">" + getWikidataId(fact.objectUri) + "</a>"
           else:
             subject = fact.subjectText + " (" + str(fact.subjectStart) + "-" + str(fact.subjectEnd) + ")"
             object = fact.objectText + " (" + str(fact.objectStart) + "-" + str(fact.objectEnd) + ")"
@@ -402,7 +458,7 @@ def writeHtmlFile(analysis, analysisPath, evaluation, goldProperties):
       writer.write("</td>")
 
       writer.write("<td style=\"vertical-align:top;\">")
-      writer.write("<table style=\"width:100%; table-layout:fixed;\">")
+      writer.write("<table style=\"width:100%;\">")
       writer.write("<tr>");
       writer.write("<th colspan=\"3\">False Positive</th>");
       writer.write("</tr>");
@@ -411,8 +467,8 @@ def writeHtmlFile(analysis, analysisPath, evaluation, goldProperties):
           color = "DarkMagenta";
           p = fact.propertyId
           if evaluation == 'uri':
-            subject = "<a href=" + fact.subjectUri + ">" + getWikidataId(fact.subjectUri) + "</a>"
-            object = "<a href=" + fact.objectUri + ">" + getWikidataId(fact.objectUri) + "</a>"
+            subject = fact.subjectText + " (" + str(fact.subjectStart) + "-" + str(fact.subjectEnd) + ")<br><a href=" + fact.subjectUri + ">" + getWikidataId(fact.subjectUri) + "</a>"
+            object = fact.objectText + " (" + str(fact.objectStart) + "-" + str(fact.objectEnd) + ")<br><a href=" + fact.objectUri + ">" + getWikidataId(fact.objectUri) + "</a>"
           else:
             subject = fact.subjectText + " (" + str(fact.subjectStart) + "-" + str(fact.subjectEnd) + ")"
             object = fact.objectText + " (" + str(fact.objectStart) + "-" + str(fact.objectEnd) + ")"
@@ -438,6 +494,7 @@ def writeHtmlFile(analysis, analysisPath, evaluation, goldProperties):
   writer.close()
 
 #######################################################
+# this function represents the main evaluation algorithm
 
 def isFactInSet(fact1, set, evaluation):
   '''
@@ -451,7 +508,7 @@ def isFactInSet(fact1, set, evaluation):
   return exists
 
 def evaluate(goldDataset, predictionDataset, evaluation, goldProperties):
-  confusionMatrix = defaultdict(lambda : defaultdict(lambda : 0))
+  predictionsMatrix = defaultdict(lambda : defaultdict(lambda : 0))
   predictionDataset_notMatched = copy.deepcopy(predictionDataset)
   analysisDataset = copy.deepcopy(goldDataset)
 
@@ -468,14 +525,14 @@ def evaluate(goldDataset, predictionDataset, evaluation, goldProperties):
               if twoFactsMatch(goldFact, predictedFact, evaluation): 
                 matchedFacts.append(predictedFact)
           else:
-            print("ERROR - Can't find passage " + goldPassage.passageId + " in the predicted file.")
+            print("ERROR - Can't find passage " + goldPassage.passageId + " in prediction file.")
             sys.exit(1)
         else:
-          print("ERROR - Can't find document " + documentId + " in the predicted file.")
+          print("ERROR - Can't find document " + documentId + " in prediction file.")
           sys.exit(1)
         
         if len(matchedFacts) == 0:
-          confusionMatrix[goldProperties[goldFact.propertyId]]["FN"] += 1
+          predictionsMatrix[goldProperties[goldFact.propertyId]]["FN"] += 1
 
           # FN --> add label FN in the relative fact for analysis
           analysisPassage = next(p for p in analysisDataset[documentId].passages if p.passageId == goldPassage.passageId)
@@ -483,7 +540,7 @@ def evaluate(goldDataset, predictionDataset, evaluation, goldProperties):
           analysisFact.eval = "FN"
 
         else:
-          confusionMatrix[goldProperties[goldFact.propertyId]]["TP"] += 1
+          predictionsMatrix[goldProperties[goldFact.propertyId]]["TP"] += 1
 
           # update not matched facts
           # do not replicate the existence check, already did above
@@ -505,7 +562,7 @@ def evaluate(goldDataset, predictionDataset, evaluation, goldProperties):
             if not notMatchedFact.propertyId in goldProperties:
               continue
             if notMatchedFact.propertyId in set([i.propertyId for i in goldPassage.exhaustivelyAnnotatedProperties]):
-              confusionMatrix[goldProperties[notMatchedFact.propertyId]]["FP"] += 1
+              predictionsMatrix[goldProperties[notMatchedFact.propertyId]]["FP"] += 1
           
               # FP --> add facts and label them FP in the analysis
               analysisPassage = next(p for p in analysisDataset[documentId].passages if p.passageId == notMatchedPassage.passageId)
@@ -513,13 +570,13 @@ def evaluate(goldDataset, predictionDataset, evaluation, goldProperties):
               analysisFact.eval = "FP"
               analysisPassage.facts.append(analysisFact)
           else:
-            print("ERROR - Passage " + notMatchedPassage.passageId + " is not the gold file.")
+            print("ERROR - Passage " + notMatchedPassage.passageId + " is not in gold file.")
             sys.exit(1)
         else:
-          print("ERROR - Document " + documentId + " is not the gold file.")
+          print("ERROR - Document " + documentId + " is not in gold file.")
           sys.exit(1)
 
-  return confusionMatrix, analysisDataset
+  return predictionsMatrix, analysisDataset
 
 
 #######################################################
@@ -531,35 +588,33 @@ def main():
             help="Path of the KnowledgeNet file with the gold data")
   parser.add_argument("predictionFile", type=str,
             help="Path of the KnowledgeNet file with the predicted data")
-  parser.add_argument("-e", choices=['span_exact', 'span_overlap', 'uri'], default=None,
+  parser.add_argument("-e", choices=['span_exact', 'span_overlap', 'uri'], default="span_overlap",
             help="Choose the evaluation method: span-exact vs span-overlap vs uri")
   parser.add_argument("-c", default=False, action="store_true",
             help="print raw counts of tp/fn/fp for prec/rec/F1 metrics")
   parser.add_argument("-a", action='store', default="", dest='analysisPath',
                       help='Folder to store error analysis and results files (default=no analysis).')
-  parser.add_argument('-f', choices=[1,2,3,4,5], default=4, type=int,
-            help='folds to evaluate. Default is 4')
-
+  parser.add_argument('-f', choices=[1,2,3,4,5,-1], default=4, type=int,
+            help='folds to evaluate. Default is 4. Choose -1 to evaluate on all the folds.')
   args = parser.parse_args()
-
-  if (args.e == None):
-    print("ERROR - No Evaluation method selected.")
-    print("Add one of the following options:")
-    print("\t[-e span_exact] (for span-exact evaluation)")
-    print("\t[-e span_overlap] (for span-overlap evaluation)")
-    print("\t[-e uri] (for uri-evaluation)")
-    sys.exit(1)
 
   # Read files
   gold, goldProperties = readKnowledgenetFile(args.goldFile, args.f)
-  prediction, predictedProperties = readKnowledgenetFile(args.predictionFile, args.f)
+  prediction, predictedProperties = readKnowledgenetFile(args.predictionFile, args.f, goldProperties)
 
-  # Check validity of the two datasets
+  # Check validity of the two datasets and send alerts
   if (len(gold) == 0):
     print("ERROR - No documents in gold_file for fold = " + str(args.f))
   if (len(prediction) == 0):
     print("ERROR - No documents in prediction_file for fold = " + str(args.f))
   if (len(gold) == 0 or len(prediction) == 0):
+    sys.exit(1)
+  if (len(prediction) != len(gold)):
+    print("ERROR - Some documents seem to be missing from prediction file.")
+  if (goldProperties != predictedProperties):
+    print("ERROR - Some properties seem to be missing from gold file.")
+  if (len(predictedProperties) == 0):
+    print("ERROR - Prediction file does not contain any prediction.")
     sys.exit(1)
 
   # Filter both datasets if uri only (and update list of properties)
@@ -568,13 +623,15 @@ def main():
     prediction, predictedProperties = filterForURIEvaluation(prediction)
 
   # Evaluate
-  confusionMatrix, analysis = evaluate(gold, prediction, args.e, goldProperties)
+  predictionsMatrix, analysis = evaluate(gold, prediction, args.e, goldProperties)
 
   # Print results
   print("RESULTS:")
+
+  printRecap(args)
   
-  evals = microEvaluation(confusionMatrix, args.c)
-  evals.extend(macroEvaluation(confusionMatrix))
+  evals = microEvaluation(predictionsMatrix, args.c)
+  evals.extend(macroEvaluation(predictionsMatrix))
 
   if args.analysisPath != "":
     if not os.path.exists(args.analysisPath):
