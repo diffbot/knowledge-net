@@ -151,12 +151,12 @@ A `factId` will be automatically generated from these attributes.
 Two facts are considered the same when they have the same property, and there is a match between the values for subject and object.
 
 We consider three different methods to establish if there is a match:
-* **Span Overlap** (`span_overlap`): there is an overlap between the character offsets (set as default in the evaluation script)
+* **Span Overlap** (`span_overlap`): there is an overlap between the character offsets (default in the evaluation script)
 * **Span Exact** (`span_exact`): the character offsets are exactly the same
 * **URI** (`uri`): Wikidata URIs are the same (only applies to facts that have URIs for both the subject and the object)
 
 #### Error Analysis
-In order to facilitate error analysis the script creates a simple html file for browser visualization. It can be enabled using the option `-a`.
+In order to facilitate error analysis the script creates a simple html file for browser visualization. It can be enabled using the option `-a <path to the analysis folder>`.
 
 ## Adding a system to the leaderboard
 
