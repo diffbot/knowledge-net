@@ -29,80 +29,81 @@ The training set is available at `train.json`. Each document contains a number o
 {
   "fold": 2,
   "documentId": "8313",
-  "documentText": "Gennaro Basile was an Italian painter, born in Naples but active in the German-speaking countries. He settled at Brünn, in Moravia, and lived about 1756. His best picture is the altar-piece in the chapel of the chateau at Seeberg, in Salzburg. Most of his works remained in Moravia.",
+  "source": "DBpedia Abstract",
+  "documentText": "Gennaro Basile\n\nGennaro Basile was an Italian painter, born in Naples but active in the German-speaking countries. He settled at Brünn, in Moravia, and lived about 1756. His best picture is the altar-piece in the chapel of the chateau at Seeberg, in Salzburg. Most of his works remained in Moravia.",
   "passages": [
     {
-      "passageId": "8313:0:98",
+      "passageId": "8313:16:114",
+      "passageStart": 16,
+      "passageEnd": 114,
+      "passageText": "Gennaro Basile was an Italian painter, born in Naples but active in the German-speaking countries.",
       "exhaustivelyAnnotatedProperties": [
-        {
+        {          
           "propertyId": "12",
           "propertyName": "PLACE_OF_BIRTH",
           "propertyDescription": "Describes the relationship between a person and the location where she/he was born."
         }
       ],
-      "passageStart": 0,
-      "passageEnd": 98,
-      "passageText": "Gennaro Basile was an Italian painter, born in Naples but active in the German-speaking countries.",
       "facts": [
         {
-          "factId": "8313:0:14:47:53:12",
+          "factId": "8313:16:30:63:69:12",
           "propertyId": "12",
           "humanReadable": "<Gennaro Basile> <PLACE_OF_BIRTH> <Naples>",
           "annotatedPassage": "<Gennaro Basile> was an Italian painter, born in <Naples> but active in the German-speaking countries.",
-          "subjectStart": 0,
-          "subjectEnd": 14,
+          "subjectStart": 16,
+          "subjectEnd": 30,
           "subjectText": "Gennaro Basile",
           "subjectUri": "http://www.wikidata.org/entity/Q19517888",
-          "objectStart": 47,
-          "objectEnd": 53,
+          "objectStart": 63,
+          "objectEnd": 69,
           "objectText": "Naples",
           "objectUri": "http://www.wikidata.org/entity/Q2634"
         }
       ]
     },
     {
-      "passageId": "8313:99:153",
+      "passageId": "8313:115:169",
+      "passageStart": 115,
+      "passageEnd": 169,
+      "passageText": "He settled at Brünn, in Moravia, and lived about 1756.",
       "exhaustivelyAnnotatedProperties": [
-        {
-          "propertyId": "12",
-          "propertyName": "PLACE_OF_BIRTH",
-          "propertyDescription": "Describes the relationship between a person and the location where she/he was born."
-        },
         {
           "propertyId": "11",
           "propertyName": "PLACE_OF_RESIDENCE",
           "propertyDescription": "Describes the relationship between a person and the location where she/he lives/lived."
+        },
+        {
+          "propertyId": "12",
+          "propertyName": "PLACE_OF_BIRTH",
+          "propertyDescription": "Describes the relationship between a person and the location where she/he was born."
         }
       ],
-      "passageStart": 99,
-      "passageEnd": 153,
-      "passageText": "He settled at Brünn, in Moravia, and lived about 1756.",
       "facts": [
         {
-          "factId": "8313:99:101:113:118:11",
+          "factId": "8313:115:117:129:134:11",
           "propertyId": "11",
           "humanReadable": "<He> <PLACE_OF_RESIDENCE> <Brünn>",
           "annotatedPassage": "<He> settled at <Brünn>, in Moravia, and lived about 1756.",
-          "subjectStart": 99,
-          "subjectEnd": 101,
+          "subjectStart": 115,
+          "subjectEnd": 117,
           "subjectText": "He",
           "subjectUri": "http://www.wikidata.org/entity/Q19517888",
-          "objectStart": 113,
-          "objectEnd": 118,
+          "objectStart": 129,
+          "objectEnd": 134,
           "objectText": "Brünn",
           "objectUri": "http://www.wikidata.org/entity/Q14960"
         },
         {
-          "factId": "8313:99:101:123:130:11",
+          "factId": "8313:115:117:139:146:11",
           "propertyId": "11",
           "humanReadable": "<He> <PLACE_OF_RESIDENCE> <Moravia>",
           "annotatedPassage": "<He> settled at Brünn, in <Moravia>, and lived about 1756.",
-          "subjectStart": 99,
-          "subjectEnd": 101,
+          "subjectStart": 115,
+          "subjectEnd": 117,
           "subjectText": "He",
           "subjectUri": "http://www.wikidata.org/entity/Q19517888",
-          "objectStart": 123,
-          "objectEnd": 130,
+          "objectStart": 139,
+          "objectEnd": 146,
           "objectText": "Moravia",
           "objectUri": "http://www.wikidata.org/entity/Q43266"
         }
@@ -117,39 +118,45 @@ The training set is available at `train.json`. Each document contains a number o
 The official evaluation script is also available for download and can be used to evaluate a system using the training set (via cross-validation). The script takes a gold standard file (e.g., `train.json`) and a prediction file (which needs to be produced by the system). The prediction file should look exactly like the gold standard file (same documents and fields), except for the contents of `facts` (which should contain the facts predicted by the system).
 
 ```
-usage: evaluator.py [-h] [-e {span_e,span_o,uri}] [-c] [-a ANALYSISPATH] [-f {1,2,3,4,5}]
+usage: evaluator.py [-h] [-e {span_exact,span_overlap,uri}] [-c]
+                    [-a ANALYSISPATH] [-f {1,2,3,4,5,-1}]
                     goldFile predictionFile
 
-mandatory arguments:
-  goldFile                Path of the KnowledgeNet file with the gold data
-  predictionFile          Path of the KnowledgeNet file with the predicted data
-  -e {span_e,span_o,uri}  Choose the evaluation method: span-exact vs span-overlap vs uri          
-  
-optional arguments:
-  -h, --help              show this help message and exit
-  -c                      print raw counts of tp/fn/fp for prec/rec/F1 metrics
-  -a ANALYSISPATH         Folder to store error analysis files (default=no analysis).
-  -f {1,2,3,4,5}          folds to evaluate (useful during cross-validation). Default is 4.
+positional arguments:
+  goldFile                            path of the KnowledgeNet file with the gold data
+  predictionFile                      path of the KnowledgeNet file with the predicted data
 
+optional arguments:
+  -h, --help                          show this help message and exit
+  -e {span_exact,span_overlap,uri}    choose the evaluation method: span-exact vs span-overlap vs uri
+  -c                                  print raw counts of tp/fn/fp for prec/rec/F1 metrics
+  -a ANALYSISPATH                     folder to store error analysis and results files
+                                      (default=no analysis).
+  -f {1,2,3,4,5,-1}                   folds to evaluate. Default is 4. Choose -1 to evaluate on all the folds.
 ```
 
 The prediction file has to keep the same unique identifiers and attributes for the given documents and passages. 
-Each new fact has to be described by a `factId` (obtained as explained above) and should contain the following attributes that are needed to run the evaluation script: 
+Each new fact must contain the following attributes that are needed to run the evaluation script: 
 * `subjectStart`
 * `subjectEnd`
 * `objectStart`
 * `objectEnd`
-* `subjectUri`
-* `objectUri`
+* `subjectUri` (can be empty)
+* `objectUri`  (can be empty)
 * `propertyId`
+
+A `factId` will be automatically generated from these attributes.
 
 #### Evaluation Methods
 Two facts are considered the same when they have the same property, and there is a match between the values for subject and object.
 
 We consider three different methods to establish if there is a match:
-* **Span Overlap** (`span_o`): there is an overlap between the character offsets
-* **Span Exact** (`span_e`): the character offsets are exactly the same
+* **Span Overlap** (`span_overlap`): there is an overlap between the character offsets (set as default in the evaluation script)
+* **Span Exact** (`span_exact`): the character offsets are exactly the same
 * **URI** (`uri`): Wikidata URIs are the same (only applies to facts that have URIs for both the subject and the object)
+
+#### Error Analysis
+In order to facilitate error analysis the script creates a simple html file for browser visualization. It can be enabled using the option `-a`.
 
 ## Adding a system to the leaderboard
 
