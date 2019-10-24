@@ -122,7 +122,7 @@ def generate_candidates(text):
 
   return instances
 
-def classify_instances(instances, predicate_ids_to_classify, includeUri=True):
+def classify_instances(instances, predicate_ids_to_classify=predicate_thresholds.keys(), includeUri=True):
   if len(instances) == 0:
     return
   max_length = max([ len(instance.get_words()) for instance in instances ])
@@ -190,7 +190,7 @@ def run_batch(texts):
   ret = []
   for text in texts:
     instances = generate_candidates(text)
-    classify_instances(instances, predicate_thresholds.keys())
+    classify_instances(instances)
     ret.append(instances)
   return ret
 

@@ -28,10 +28,13 @@ for document in dataset.values():
   instances = run.generate_candidates(document.documentText)
   for passage in document.passages:
     annotated_properties = set(map(lambda x: x.propertyId, passage.exhaustivelyAnnotatedProperties))
-    if len(annotated_properties) == 0:
+    if which == "dev" and len(annotated_properties) == 0:
       continue
     passage_instances = list(filter(lambda x: x.is_in_span(passage.passageStart, passage.passageEnd), instances))
-    run.classify_instances(passage_instances, annotated_properties)
+    if which == "dev":
+      run.classify_instances(passage_instances, annotated_properties)
+    else:
+      run.classify_instances(passage_instances)
     passage.facts = []
     for fact in passage_instances:
       for predicate_id, label in fact.labels.items():
@@ -59,6 +62,7 @@ def print_evaluation(eval_type):
   evals = evaluator.microEvaluation(confusionMatrix, True)
   evals.extend(evaluator.macroEvaluation(confusionMatrix))
   
+  evaluator.writeAnalysisFile(analysis, 'tmp', eval_type)
   evaluator.writeHtmlFile(analysis, 'tmp', eval_type, goldProperties)
 
 print_evaluation("span_overlap")
