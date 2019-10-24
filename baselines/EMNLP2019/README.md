@@ -1,7 +1,9 @@
 ## Requirements
 python 3.7
+```
 pip install -r requirements.txt
 python -m spacy download en_core_web_lg
+```
 
 Set environment variable DIFFBOT_TOKEN if you want to use entitylinking. We are providing cached results for the KnowledgeNet documents, but you will need this if you want to run the system on other documents or if you want to change the NER system. Free trial available at https://www.diffbot.com/get-started/
 
