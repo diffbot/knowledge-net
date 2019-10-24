@@ -15,9 +15,31 @@ Run on a single document:
 
 `echo "Butler W. Lampson (born December 23, 1943) is an American computer scientist contributing to the development and implementation of distributed, personal computing. He is a Technical Fellow at Microsoft and an Adjunct Professor at MIT." | python run.py`
 
+output
+```
+Butler W. Lampson| DATE_OF_BIRTH(0.99) December 23, 1943|
+Butler W. Lampson|http://www.wikidata.org/entity/Q92644 NATIONALITY(0.88) American|http://www.wikidata.org/entity/Q30
+Microsoft|http://www.wikidata.org/entity/Q2283 CEO(0.63) He|http://www.wikidata.org/entity/Q92644
+He|http://www.wikidata.org/entity/Q92644 EMPLOYEE_OR_MEMBER_OF(0.88) Microsoft|http://www.wikidata.org/entity/Q2283
+He|http://www.wikidata.org/entity/Q92644 EMPLOYEE_OR_MEMBER_OF(0.93) MIT|http://www.wikidata.org/entity/Q49108
+He| DATE_OF_BIRTH(1.00) December 23, 1943|
+He|http://www.wikidata.org/entity/Q92644 NATIONALITY(0.86) American|http://www.wikidata.org/entity/Q30
+Butler W. Lampson|http://www.wikidata.org/entity/Q92644 EMPLOYEE_OR_MEMBER_OF(0.56) Microsoft|http://www.wikidata.org/entity/Q2283
+Butler W. Lampson|http://www.wikidata.org/entity/Q92644 EMPLOYEE_OR_MEMBER_OF(0.69) MIT|http://www.wikidata.org/entity/Q49108
+```
+
 ## Evaluating
 
-python evaluate.py [test or dev]
+`python evaluate.py [test or dev]`
+
+This creates the analysis files in `tmp` and when run on `dev` prints the results. To preserve the integrity of the results, we have released the test set without annotations. See https://github.com/diffbot/knowledge-net#adding-a-system-to-the-leaderboard for more details.
+
+With the pretrained baseline 5 model you should get similar to the following on the dev set
+```
+span_overlap   0.718          0.691          0.704
+span_exact     0.620          0.599          0.609
+uri            0.557          0.472          0.511  
+```
 
 ## Training
 
