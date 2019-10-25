@@ -164,4 +164,4 @@ To preserve the integrity of the results, we have released the test set (fifth f
 
 # Code
 
-The code for the baseline systems will be released soon.
+[EMNLP Baseline Code](baselines/EMNLP2019/README.md)
