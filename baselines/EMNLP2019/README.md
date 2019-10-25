@@ -5,7 +5,7 @@ pip install -r requirements.txt
 python -m spacy download en_core_web_lg
 ```
 
-Set environment variable DIFFBOT_TOKEN if you want to use entitylinking. We are providing cached results for the KnowledgeNet documents, but you will need this if you want to run the system on other documents or if you want to change the NER system. Free trial available at https://www.diffbot.com/get-started/
+Set environment variable DIFFBOT_TOKEN if you want to use entitylinking. We are providing cached results for the KnowledgeNet documents, but you will need this if you want to run the system on other documents or if you want to change the NER system. Contact Filipe Mesquita (filipe[at]diffbot.com) for a free research token.
 
 ## Using the pretrained model
 
@@ -36,6 +36,7 @@ This creates the analysis files in `tmp` and when run on `dev` prints the result
 
 With the pretrained baseline 5 model you should get similar to the following on the dev set
 ```
+Evaluation     Precision      Recall         F1
 span_overlap   0.718          0.691          0.704
 span_exact     0.620          0.599          0.609
 uri            0.557          0.472          0.511  
