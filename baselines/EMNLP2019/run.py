@@ -5,6 +5,7 @@ import os
 import entitylinker
 import bert_wrapper
 import yaml
+import sys
 
 import spacy
 nlp = spacy.load('en_core_web_lg')
@@ -122,7 +123,7 @@ def generate_candidates(text):
 
   return instances
 
-def classify_instances(instances, predicate_ids_to_classify=predicate_thresholds.keys(), includeUri=True):
+def classify_instances(instances, predicate_ids_to_classify=None, includeUri=True):
   if len(instances) == 0:
     return
   max_length = max([ len(instance.get_words()) for instance in instances ])
@@ -148,6 +149,8 @@ def classify_instances(instances, predicate_ids_to_classify=predicate_thresholds
         global_features_batch.append(global_features)
 
   for sess, model_preds, predicate_thresholds in models:
+    if predicate_ids_to_classify is None:
+      predicate_ids_to_classify = predicate_thresholds.keys()
     model_preds = predicate_ids_to_classify if CANDIDATE_RECALL else model_preds
     if len(set(model_preds).intersection(predicate_ids_to_classify)) == 0:
       continue
@@ -195,6 +198,9 @@ def run_batch(texts):
   return ret
 
 if __name__ == "__main__":
+  if len(models) == 0:
+    print("No trained model")
+    sys.exit(0)
   import fileinput
   for line in fileinput.input():
     for fact in run_batch([line])[0]:

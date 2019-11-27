@@ -8,6 +8,7 @@ import json
 import time
 import diffbot_nlapi
 import logging
+import pathlib
 
 from config import MODEL, NUMBER_URI_CANDIDATES, SOFT_COREF_CANDIDATES
 
@@ -15,6 +16,7 @@ from config import MODEL, NUMBER_URI_CANDIDATES, SOFT_COREF_CANDIDATES
 Span.set_extension("el_candidates", default=[])
 Span.set_extension("uri_candidates", default=[])
 
+pathlib.Path('tmp').mkdir(parents=True, exist_ok=True)
 db = SqliteDict(os.path.join('tmp','el.db'), autocommit=True)
 
 configuration = diffbot_nlapi.Configuration()

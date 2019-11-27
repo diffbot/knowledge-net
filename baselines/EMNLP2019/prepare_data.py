@@ -12,7 +12,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO, stre
 import evaluator
 from instance import Instance
 import numpy as np
-from run import generate_candidates, classify_instances
+from run import generate_candidates
 from vocab import Vocab
 from config import NUMBER_URI_CANDIDATES_TO_CONSIDER, URI_THRESHOLD, MODEL, KNOWLEDGE_NET_DIR, MULTITASK
 
