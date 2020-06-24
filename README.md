@@ -13,11 +13,13 @@ For a description of the dataset and baseline systems, please refer to our [EMNL
 |        System       		| Link F1		| Text F1  		|
 |---------------------   	| ---------	|--------- 		|
 | _Human_	                                                            | **0.822** | **0.878** 	|
-| KnowledgeNet Baseline	5	(Baseline 4 + BERT)                         | 0.504 		| 0.688     	|
+| [DYGIE++](https://arxiv.org/pdf/1909.03546.pdf)                     | N/A 		  | 0.754     	|
+| [Diffbot (NER, coref, linker)](https://www.diffbot.com/) + [Matching the Blanks (relations)](https://arxiv.org/pdf/1906.03158.pdf)                     | 0.695 		  | 0.737     	|
+| KnowledgeNet Baseline	5	(Baseline 4 + BERT for relations)                         | 0.504 		| 0.688     	|
 | KnowledgeNet Baseline 4	(Baseline 3 + noisy candidate facts)        | 0.491 		| 0.621     	|
-| KnowledgeNet Baseline 3	(Baseline 2 + KB information)               | 0.362 		| 0.545     	|
-| KnowledgeNet Baseline 2	(Baseline 1 + coreference resolution)       | 0.342 		| 0.554     	|
-| KnowledgeNet Baseline 1 (based on Stanford's TAC KBP winning system)| 0.281 		| 0.518     	|
+| KnowledgeNet Baseline 3	(Baseline 2 + external information)               | 0.362 		| 0.545     	|
+| KnowledgeNet Baseline 2	(Baseline 1 + Huggingface coref)       | 0.342 		| 0.554     	|
+| KnowledgeNet Baseline 1 (Spacy NER, Diffbot linker, Bi-LSTM for relations)| 0.281 		| 0.518     	|
 
 
 
