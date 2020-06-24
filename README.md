@@ -16,6 +16,7 @@ For a description of the dataset and baseline systems, please refer to our [EMNL
 | [Diffbot Joint Model](https://www.diffbot.com/)                     | 0.726 		  | 0.810     	|
 | [DYGIE++](https://arxiv.org/pdf/1909.03546.pdf)                     | N/A 		  | 0.754     	|
 | [Diffbot NER, coref, linker](https://www.diffbot.com/) + [Matching the Blanks (relations)](https://arxiv.org/pdf/1906.03158.pdf)                     | 0.695 		  | 0.737     	|
+| [Diffbot Open Relation Extraction (no training data for relations)](https://www.diffbot.com/)                     | 0.546 		  | 0.560     	|
 | KnowledgeNet Baseline	5	(Baseline 4 + BERT for relations)                         | 0.504 		| 0.688     	|
 | KnowledgeNet Baseline 4	(Baseline 3 + noisy candidate facts)        | 0.491 		| 0.621     	|
 | KnowledgeNet Baseline 3	(Baseline 2 + external information)               | 0.362 		| 0.545     	|
