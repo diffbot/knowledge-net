@@ -7,7 +7,7 @@ For instance, the dataset contains text expressing the fact ([Gennaro Basile](ht
 
 For a description of the dataset and baseline systems, please refer to our [EMNLP paper](https://github.com/diffbot/knowledge-net/blob/master/knowledgenet-emnlp-cameraready.pdf).
 
-This [html file](/human_readable-v10-notest.html) contains the dataset in a human readable tabular format. You can open the file with a browser to visualize.
+To visualize the dataset you can dowload this [file](/human_readable-v10-notest.zip) and open it with a browser. It contains a human readable tabular version of the dataset.
 
 
 ## Leaderboard
